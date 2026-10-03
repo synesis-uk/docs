@@ -1,0 +1,12 @@
+{
+  "name": "catchment-docs",
+  "private": true,
+  "scripts": {
+    "dev": "mint dev",
+    "check:links": "mint broken-links",
+    "validate": "mint validate"
+  },
+  "devDependencies": {
+    "mint": "4.2.981"
+  }
+}

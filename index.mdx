@@ -1,20 +1,101 @@
 ---
-title: "Introduction"
-description: "Welcome to your project"
+title: "Overview"
+description: "Demographic, affluence and housing metrics for catchments around UK postcodes and for H3 cells, and the mapping between statistical areas and H3 cells."
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+<Note>
+  The API is in internal preview. Requests are accepted only from organisations enabled for it.
+</Note>
 
-<Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
-</Tip>
+## Endpoints
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
-</Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | [`/v1/catchment-metrics`](/api-reference/catchments/get-catchment-metrics) | Metric values for a catchment around a postcode |
+| `GET` | [`/v1/hex-metrics`](/api-reference/cells/get-hex-metrics) | Metric values for one H3 cell |
+| `GET` | [`/v1/area-cells`](/api-reference/area-mappings/list-cells-for-an-area) | H3 cells an area overlaps |
+| `GET` | [`/v1/cell-areas`](/api-reference/area-mappings/list-areas-for-a-cell) | Areas that overlap an H3 cell |
+| `GET` | [`/v1/metrics`](/api-reference/metrics/list-metrics) | Metrics available to request |
+
+## Base URL
+
+```text
+https://api.catchment.app
+```
+
+All endpoints are served over HTTPS under `/v1`.
+
+## Authentication
+
+Requests are authenticated with an API key sent as a bearer token:
+
+```text
+Authorization: Bearer ck_...
+```
+
+| Property | Detail |
+| --- | --- |
+| Format | Prefix `ck_` followed by 43 characters |
+| Issued by | Organisation admins, under **Account** > **Catchment API** |
+| Scope | The organisation. A key is not tied to the member who created it. |
+| Storage | Shown once at creation. Only a hash is stored, so a key cannot be recovered. |
+| Revocation | Takes effect from the next request |
+
+A missing, unknown or revoked key returns `401`. A valid key for an organisation without API access returns `403`.
+
+## Requests
+
+| Property | Detail |
+| --- | --- |
+| Method | `GET` |
+| Parameters | Query string |
+| Unknown parameters | Rejected with `400`, except by `/v1/metrics`, which takes no parameters and ignores them |
+| Repeated parameters | Rejected with `400` |
+
+## Responses
+
+| Property | Detail |
+| --- | --- |
+| Content type | `application/json` |
+| Caching | `Cache-Control: no-store` |
+| Request id | `X-Request-Id` header and `request_id` body field, a UUID |
+
+## Errors
+
+Errors return a JSON body with a machine-readable `code` and a human-readable `message`:
+
+```json
+{
+  "request_id": "0d6f2a4b-8e3c-4a7d-b1f2-9c5e6d7a8b90",
+  "error": {
+    "code": "postcode_not_found",
+    "message": "No UK postcode ZZ99ZZZ was found."
+  }
+}
+```
+
+| Status | Code | Cause |
+| --- | --- | --- |
+| `400` | `invalid_request` | Missing, invalid, unknown or repeated parameter, or unknown metric key. Unknown keys are listed in `error.unknown_metrics`. |
+| `401` | `unauthorized` | Missing, unknown or revoked API key |
+| `403` | `forbidden` | Organisation not enabled for the API, or its access has expired |
+| `404` | `area_not_found` | No area of the given type has the given code |
+| `404` | `postcode_not_found` | Postcode not in the ONS Postcode Directory |
+| `404` | `outside_coverage` | Postcode or cell outside Great Britain |
+| `404` | `not_found` | No endpoint at the path. This response has no request id. |
+| `405` | | Method not supported by the endpoint. No JSON body. |
+| `429` | `rate_limited` | Rate limit reached for the key |
+| `500` | `internal_error` | Server error |
+
+## Rate limits
+
+| Property | Detail |
+| --- | --- |
+| Limit | 60 requests per minute per key |
+| Window | Calendar minute. The count resets at the start of each minute. |
+| Headers | `X-RateLimit-Limit` and `X-RateLimit-Remaining` on responses to an accepted key |
+| On limit | `429` with `Retry-After`, the seconds until the next minute |
+
+## Coverage
+
+Catchments, cells and area mappings cover England, Scotland and Wales. Metric coverage varies by source and is listed in the [metric catalogue](/api-reference/metric-catalogue). Area type coverage is listed under [area mappings](/api-reference/area-mappings/list-cells-for-an-area).

@@ -1,0 +1,1166 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Catchment API",
+    "version": "1.0.0",
+    "description": "Demographic, affluence and housing metrics for catchments around UK postcodes and for H3 cells, and the mapping between statistical areas and H3 cells."
+  },
+  "servers": [
+    {
+      "url": "https://api.catchment.app"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/catchment-metrics": {
+      "get": {
+        "operationId": "getCatchmentMetrics",
+        "summary": "Get catchment metrics",
+        "description": "Returns values for the requested metrics in a drive-time or radius catchment around a postcode. Exactly one of `drive_minutes` or `radius_miles` is required.",
+        "parameters": [
+          {
+            "name": "postcode",
+            "in": "query",
+            "required": true,
+            "description": "UK postcode. Case and spacing are ignored. Resolved to its centroid in the ONS Postcode Directory.",
+            "schema": {
+              "type": "string",
+              "example": "SW1A 1AA"
+            }
+          },
+          {
+            "name": "drive_minutes",
+            "in": "query",
+            "required": false,
+            "description": "Drive-time catchment in minutes. Mutually exclusive with `radius_miles`.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25,
+              "example": 10
+            }
+          },
+          {
+            "name": "radius_miles",
+            "in": "query",
+            "required": false,
+            "description": "Radius catchment in miles, measured in a straight line. Mutually exclusive with `drive_minutes`.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            }
+          },
+          {
+            "name": "metrics",
+            "in": "query",
+            "required": true,
+            "description": "Comma-separated metric keys, at most 50. Duplicates are ignored. Keys are listed by `GET /v1/metrics` and in the metric catalogue.",
+            "schema": {
+              "type": "string",
+              "example": "avg_price,population_75_plus,population_75_plus_pct"
+            }
+          },
+          {
+            "name": "projection_year",
+            "in": "query",
+            "required": false,
+            "description": "Year to project population counts to. Omit for observed values.",
+            "schema": {
+              "type": "integer",
+              "minimum": 2026,
+              "maximum": 2035,
+              "example": 2032
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metric values for the catchment.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimitLimit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimitRemaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatchmentMetricsResponse"
+                },
+                "example": {
+                  "request_id": "4e44869e-1fd1-4c9b-9701-c0037ec163f5",
+                  "catchment": {
+                    "cell_count": 37,
+                    "minutes": 10,
+                    "type": "drive_time"
+                  },
+                  "data_version": "demographics_build:8eac09a5-bcf1-48cb-a2c2-d3a33a52ee7c",
+                  "location": {
+                    "latitude": 51.50101,
+                    "longitude": -0.141563,
+                    "postcode": "SW1A 1AA",
+                    "postcode_terminated_on": null
+                  },
+                  "projection_year": 2032,
+                  "values": {
+                    "avg_price": 1440457,
+                    "population_75_plus": 11165,
+                    "population_75_plus_pct": 5.8
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "The postcode was not found, or there is no catchment data for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "request_id": "cdee393e-048a-4c89-b093-8bfc5ee23b37",
+                  "error": {
+                    "code": "outside_coverage",
+                    "message": "Catchment data covers Great Britain. There is none for this postcode."
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": [
+          "Catchments"
+        ],
+        "x-mint": {
+          "content": "## Catchment definition\n\n- Catchments are precomputed on an H3 grid at resolution 8 (average cell area 0.74 km²) covering Great Britain.\n- The origin is the H3 cell containing the postcode centroid from the ONS Postcode Directory. Postcodes in the same cell resolve to the same catchment.\n- `drive_minutes`: cells reachable within the given drive time on an OpenStreetMap road network.\n- `radius_miles`: cells within the given straight-line distance of the origin.\n- Bands are cumulative. The 10-minute catchment contains the 9-minute catchment.\n- `catchment.cell_count` is the number of cells in the catchment.\n\n## Values\n\n- Counts are summed across the catchment's cells. Averages, percentages, indices and ranks are averaged across cells, weighted as listed in the [metric catalogue](/api-reference/metric-catalogue).\n- Values are rounded to each metric's precision.\n- A value is `null` when there is no data for the metric in the catchment. This includes catchments outside the metric's coverage, metrics not yet in the precomputed catchments, and projections unavailable for the origin's local authority.\n\n## Projection\n\n- Without `projection_year`, values are as observed: 2021 Census counts, and ONS mid-2024 estimates for single-year ages 0 to 4.\n- With `projection_year`, population counts by age, total population and NS-SeC counts are scaled by the projected change for the local authority containing the postcode centroid. Shares and totals derived from them are recalculated.\n- The same change applies to every cell in the catchment, including cells in neighbouring local authorities.\n- Other metrics are unchanged. The [metric catalogue](/api-reference/metric-catalogue) lists the metrics a projection affects.\n\n## Coverage\n\n- England, Scotland and Wales. A Northern Ireland postcode returns `404` with `outside_coverage`.\n- Some metrics cover part of Great Britain only. Coverage is listed in the [metric catalogue](/api-reference/metric-catalogue).\n- Retired postcodes resolve. `location.postcode_terminated_on` gives the date the postcode was retired.\n\n## Data version\n\n`data_version` identifies the data build the values come from. It changes when the underlying data is rebuilt.\n"
+        }
+      }
+    },
+    "/v1/hex-metrics": {
+      "get": {
+        "operationId": "getHexMetrics",
+        "tags": [
+          "Cells"
+        ],
+        "summary": "Get hex metrics",
+        "description": "Returns values for the requested metrics in a single H3 cell at resolution 8.",
+        "x-mint": {
+          "content": "## Values\n\n- Values describe the cell alone. Counts are the cell's count, and averages, percentages, indices and ranks are the cell's value.\n- Most cell values are estimated from the source areas that overlap the cell, such as output areas and LSOAs, apportioned by address counts where available and by area otherwise.\n- Values are rounded to each metric's precision.\n- A value is `null` when there is no data for the metric in the cell, including cells outside the metric's coverage.\n\n## Projection\n\n- Without `projection_year`, values are as observed. With it, counts are projected as for [`GET /v1/catchment-metrics`](/api-reference/catchments/get-catchment-metrics), using the local authority containing the cell's centre.\n\n## Coverage\n\n- Cells in England, Scotland and Wales. A cell with no metric data, such as one at sea or in Northern Ireland, returns `404` with `outside_coverage`.\n- `cell.latitude` and `cell.longitude` are the cell's centre.\n"
+        },
+        "parameters": [
+          {
+            "name": "h3",
+            "in": "query",
+            "required": true,
+            "description": "H3 cell index at resolution 8. Case is ignored.",
+            "schema": {
+              "type": "string",
+              "example": "88195da493fffff"
+            }
+          },
+          {
+            "name": "metrics",
+            "in": "query",
+            "required": true,
+            "description": "Comma-separated metric keys, at most 50. Duplicates are ignored. Keys are listed by `GET /v1/metrics` and in the metric catalogue.",
+            "schema": {
+              "type": "string",
+              "example": "avg_price,population_75_plus,population_75_plus_pct"
+            }
+          },
+          {
+            "name": "projection_year",
+            "in": "query",
+            "required": false,
+            "description": "Year to project population counts to. Omit for observed values.",
+            "schema": {
+              "type": "integer",
+              "minimum": 2026,
+              "maximum": 2035,
+              "example": 2032
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metric values for the cell.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimitLimit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimitRemaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HexMetricsResponse"
+                },
+                "example": {
+                  "request_id": "d8b1a54b-0b1b-4fcc-866c-2119580b3a43",
+                  "cell": {
+                    "h3": "88195da493fffff",
+                    "latitude": 51.50195883361916,
+                    "longitude": -0.13825777606139614
+                  },
+                  "projection_year": 2032,
+                  "values": {
+                    "population_total": 1292,
+                    "population_75_plus": 40,
+                    "avg_price": 1673833,
+                    "accommodation_flat_households": 435
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The cell has no metric data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "request_id": "1f2e3d4c-5b6a-4978-8a9b-0c1d2e3f4a5b",
+                  "error": {
+                    "code": "outside_coverage",
+                    "message": "Metric data covers Great Britain. There is none for this cell."
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v1/area-cells": {
+      "get": {
+        "operationId": "listAreaCells",
+        "tags": [
+          "Area mappings"
+        ],
+        "summary": "List cells for an area",
+        "description": "Returns the H3 cells an area overlaps, with the share of the area in each cell and the share of each cell the area covers. Cells are ordered by `share_of_area`, largest first.",
+        "x-mint": {
+          "content": "## Area types\n\n| `type` | Areas | Coverage |\n| --- | --- | --- |\n| `oa` | Output areas: 2021 in England and Wales, 2022 in Scotland | Great Britain |\n| `lsoa` | 2021 lower layer super output areas | England and Wales |\n| `msoa` | 2021 middle layer super output areas | England and Wales |\n| `data_zone` | 2022 data zones | Scotland |\n| `intermediate_zone` | 2022 intermediate zones | Scotland |\n\n## Shares\n\n| Field | Definition |\n| --- | --- |\n| `share_of_area` | Fraction of the area's land that lies in the cell. Summed over an area's cells it is 1, less a small remainder for some coastal areas. |\n| `share_of_cell` | Fraction of the cell covered by the area. Summed over a cell's areas of one type it is 1 for a cell wholly on land, and less for a cell partly at sea. |\n\n- Shares are by area, measured on the spheroid. They are not the address-weighted shares used for some metrics.\n- Shares are rounded to 6 decimal places.\n- Cells are H3 resolution 8, the grid the metrics are built on.\n"
+        },
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "description": "Area type.",
+            "schema": {
+              "$ref": "#/components/schemas/AreaType"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "description": "Area code: a letter followed by eight digits. Case is ignored.",
+            "schema": {
+              "type": "string",
+              "example": "E01000001"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The cells the area overlaps.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimitLimit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimitRemaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaCellsResponse"
+                },
+                "example": {
+                  "request_id": "ca381f44-bb48-4e42-9858-70c8376b871f",
+                  "area": {
+                    "code": "E01000001",
+                    "type": "lsoa"
+                  },
+                  "cells": [
+                    {
+                      "h3": "88194ad329fffff",
+                      "share_of_area": 0.512728,
+                      "share_of_cell": 0.122357
+                    },
+                    {
+                      "h3": "88194ad363fffff",
+                      "share_of_area": 0.408265,
+                      "share_of_cell": 0.097457
+                    },
+                    {
+                      "h3": "88194ad305fffff",
+                      "share_of_area": 0.079011,
+                      "share_of_cell": 0.018861
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No area of that type has that code.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "request_id": "2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d",
+                  "error": {
+                    "code": "area_not_found",
+                    "message": "No lsoa E01999999 was found."
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v1/cell-areas": {
+      "get": {
+        "operationId": "listCellAreas",
+        "tags": [
+          "Area mappings"
+        ],
+        "summary": "List areas for a cell",
+        "description": "Returns the areas of one type that overlap an H3 cell, with the share of each area in the cell and the share of the cell each area covers. Areas are ordered by `share_of_cell`, largest first.",
+        "x-mint": {
+          "content": "## Area types\n\n| `type` | Areas | Coverage |\n| --- | --- | --- |\n| `oa` | Output areas: 2021 in England and Wales, 2022 in Scotland | Great Britain |\n| `lsoa` | 2021 lower layer super output areas | England and Wales |\n| `msoa` | 2021 middle layer super output areas | England and Wales |\n| `data_zone` | 2022 data zones | Scotland |\n| `intermediate_zone` | 2022 intermediate zones | Scotland |\n\nA cell outside a type's coverage returns an empty `areas` list, for example an LSOA request for a cell in Scotland.\n\n## Shares\n\n| Field | Definition |\n| --- | --- |\n| `share_of_area` | Fraction of the area's land that lies in the cell. Summed over an area's cells it is 1, less a small remainder for some coastal areas. |\n| `share_of_cell` | Fraction of the cell covered by the area. Summed over a cell's areas of one type it is 1 for a cell wholly on land, and less for a cell partly at sea. |\n\n- Shares are by area, measured on the spheroid. They are not the address-weighted shares used for some metrics.\n- Shares are rounded to 6 decimal places.\n- Cells are H3 resolution 8, the grid the metrics are built on.\n- A cell outside the grid returns `404` with `outside_coverage`.\n"
+        },
+        "parameters": [
+          {
+            "name": "h3",
+            "in": "query",
+            "required": true,
+            "description": "H3 cell index at resolution 8. Case is ignored.",
+            "schema": {
+              "type": "string",
+              "example": "88195da493fffff"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "description": "Area type.",
+            "schema": {
+              "$ref": "#/components/schemas/AreaType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The areas that overlap the cell.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimitLimit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimitRemaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CellAreasResponse"
+                },
+                "example": {
+                  "request_id": "f0ca1a47-b888-461e-9ba0-b9ffe50ea09b",
+                  "areas": [
+                    {
+                      "code": "E00023938",
+                      "share_of_area": 0.762328,
+                      "share_of_cell": 0.324435
+                    },
+                    {
+                      "code": "E00190384",
+                      "share_of_area": 0.854688,
+                      "share_of_cell": 0.247392
+                    },
+                    {
+                      "code": "E00023937",
+                      "share_of_area": 0.368425,
+                      "share_of_cell": 0.116549
+                    }
+                  ],
+                  "cell": {
+                    "h3": "88195da493fffff"
+                  },
+                  "type": "oa"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The cell is outside the grid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "request_id": "3b4c5d6e-7f8a-4b9c-8d0e-1f2a3b4c5d6e",
+                  "error": {
+                    "code": "outside_coverage",
+                    "message": "Area mappings cover Great Britain. This cell is outside it."
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v1/metrics": {
+      "get": {
+        "operationId": "listMetrics",
+        "summary": "List metrics",
+        "description": "Lists the metrics available to `GET /v1/catchment-metrics` and `GET /v1/hex-metrics`, with label, description, unit, domain, source and coverage. Query parameters are ignored.",
+        "responses": {
+          "200": {
+            "description": "The metrics available.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimitLimit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimitRemaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsResponse"
+                },
+                "example": {
+                  "request_id": "3aef9dc4-3a78-4555-a1cd-e7b6d4dd71c5",
+                  "metrics": [
+                    {
+                      "description": "ONS average income per household.",
+                      "domain": "affluence",
+                      "key": "avg_income",
+                      "label": "Average Household income",
+                      "nations": null,
+                      "source": "ONS small area income estimates, FYE 2023",
+                      "unit": "currency_gbp"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": [
+          "Metrics"
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "An API key created under **Account** > **Catchment API**. Keys start with `ck_`."
+      }
+    },
+    "headers": {
+      "RequestId": {
+        "description": "Identifies the request. Quote it when reporting a problem.",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "RateLimitLimit": {
+        "description": "Requests allowed per minute for this key.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimitRemaining": {
+        "description": "Requests left for this key in the current minute.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    },
+    "responses": {
+      "InvalidRequest": {
+        "description": "A parameter is missing or invalid, or a metric key is unknown.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "request_id": "8c5c1f3e-5b2a-4f6e-9d1a-2f4b7e9c0a11",
+              "error": {
+                "code": "invalid_request",
+                "message": "Unknown metrics: carehome_demand. GET /v1/metrics lists the metrics available.",
+                "unknown_metrics": [
+                  "carehome_demand"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "The API key is missing, unknown or revoked.",
+        "headers": {
+          "WWW-Authenticate": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "request_id": "0d6f2a4b-8e3c-4a7d-b1f2-9c5e6d7a8b90",
+              "error": {
+                "code": "unauthorized",
+                "message": "A valid API key is required. Send it as an Authorization: Bearer header."
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The key is valid, but its organisation cannot use the API.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "request_id": "6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+              "error": {
+                "code": "forbidden",
+                "message": "API access is not enabled for this organisation."
+              }
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "The key has used its requests for the current minute.",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds until the next minute starts.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "request_id": "f1e2d3c4-b5a6-4978-8a9b-0c1d2e3f4a5b",
+              "error": {
+                "code": "rate_limited",
+                "message": "Rate limit of 60 requests a minute reached."
+              }
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Something went wrong on our side.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "request_id": "9b8a7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d",
+              "error": {
+                "code": "internal_error",
+                "message": "The request could not be completed. Quote the request id if this keeps happening."
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "CatchmentMetricsResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "catchment",
+          "data_version",
+          "location",
+          "projection_year",
+          "values"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "catchment": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DriveTimeCatchment"
+              },
+              {
+                "$ref": "#/components/schemas/RadiusCatchment"
+              }
+            ]
+          },
+          "data_version": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The data build the values come from. It changes when the underlying data is rebuilt."
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "projection_year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The year population counts were projected to, or null for observed values."
+          },
+          "values": {
+            "type": "object",
+            "description": "One value per requested metric key. A value is null when there is no data for it in this catchment.",
+            "additionalProperties": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "DriveTimeCatchment": {
+        "type": "object",
+        "required": [
+          "type",
+          "minutes",
+          "cell_count"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "drive_time"
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "cell_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "How many grid cells the catchment covers."
+          }
+        }
+      },
+      "RadiusCatchment": {
+        "type": "object",
+        "required": [
+          "type",
+          "miles",
+          "cell_count"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "radius"
+          },
+          "miles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "cell_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "How many grid cells the catchment covers."
+          }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "required": [
+          "postcode",
+          "latitude",
+          "longitude",
+          "postcode_terminated_on"
+        ],
+        "properties": {
+          "postcode": {
+            "type": "string",
+            "description": "The postcode, formatted."
+          },
+          "latitude": {
+            "type": "number",
+            "description": "Latitude of the postcode centroid."
+          },
+          "longitude": {
+            "type": "number",
+            "description": "Longitude of the postcode centroid."
+          },
+          "postcode_terminated_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The date the postcode was retired, or null if it is still in use."
+          }
+        }
+      },
+      "MetricsResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "metrics"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Metric"
+            }
+          }
+        }
+      },
+      "Metric": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "description",
+          "unit",
+          "domain",
+          "source",
+          "nations"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The key to pass in `metrics`."
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "One of `count`, `currency_gbp`, `index`, `pct`, `percent` or `rank`."
+          },
+          "domain": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "One of `affluence`, `demographics` or `housing`."
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where the data comes from."
+          },
+          "nations": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "description": "ONS codes of the nations the metric has values for. Null means all of Great Britain.",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "area_not_found",
+                  "forbidden",
+                  "internal_error",
+                  "invalid_request",
+                  "not_found",
+                  "outside_coverage",
+                  "postcode_not_found",
+                  "rate_limited",
+                  "unauthorized"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "unknown_metrics": {
+                "type": "array",
+                "description": "The metric keys that were not recognised, when that is the problem.",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AreaType": {
+        "type": "string",
+        "enum": [
+          "oa",
+          "lsoa",
+          "msoa",
+          "data_zone",
+          "intermediate_zone"
+        ]
+      },
+      "HexMetricsResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "cell",
+          "projection_year",
+          "values"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cell": {
+            "type": "object",
+            "required": [
+              "h3",
+              "latitude",
+              "longitude"
+            ],
+            "properties": {
+              "h3": {
+                "type": "string",
+                "description": "The cell, lower case."
+              },
+              "latitude": {
+                "type": "number",
+                "description": "Latitude of the cell's centre."
+              },
+              "longitude": {
+                "type": "number",
+                "description": "Longitude of the cell's centre."
+              }
+            }
+          },
+          "projection_year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The year population counts were projected to, or null for observed values."
+          },
+          "values": {
+            "type": "object",
+            "description": "One value per requested metric key. A value is null when there is no data for it in this cell.",
+            "additionalProperties": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "AreaCellsResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "area",
+          "cells"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "area": {
+            "type": "object",
+            "required": [
+              "code",
+              "type"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "type": {
+                "$ref": "#/components/schemas/AreaType"
+              }
+            }
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "h3",
+                "share_of_area",
+                "share_of_cell"
+              ],
+              "properties": {
+                "h3": {
+                  "type": "string"
+                },
+                "share_of_area": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Fraction of the area's land in the cell."
+                },
+                "share_of_cell": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Fraction of the cell covered by the area."
+                }
+              }
+            }
+          }
+        }
+      },
+      "CellAreasResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "areas",
+          "cell",
+          "type"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "areas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "code",
+                "share_of_area",
+                "share_of_cell"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "share_of_area": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Fraction of the area's land in the cell."
+                },
+                "share_of_cell": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Fraction of the cell covered by the area."
+                }
+              }
+            }
+          },
+          "cell": {
+            "type": "object",
+            "required": [
+              "h3"
+            ],
+            "properties": {
+              "h3": {
+                "type": "string"
+              }
+            }
+          },
+          "type": {
+            "$ref": "#/components/schemas/AreaType"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Catchments",
+      "description": "Metric values for a catchment around a postcode."
+    },
+    {
+      "name": "Cells",
+      "description": "Metric values for a single H3 cell."
+    },
+    {
+      "name": "Area mappings",
+      "description": "Overlaps between statistical areas and H3 cells."
+    },
+    {
+      "name": "Metrics",
+      "description": "The metrics available to request."
+    }
+  ]
+}
