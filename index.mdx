@@ -1,101 +1,140 @@
 ---
 title: "Overview"
-description: "Demographic, affluence and housing metrics for catchments around UK postcodes and for H3 cells, and the mapping between statistical areas and H3 cells."
+description: "Endpoint, authentication, response, credit and coverage reference for the Catchment API."
 ---
 
-<Note>
-  The API is in internal preview. Requests are accepted only from organisations enabled for it.
-</Note>
+The Catchment API returns postcode-catchment, H3-cell and local-authority metrics. Access is enabled per organisation. A valid API key does not grant access to additional datasets or metrics.
+
+This reference describes the current implementation. The beta service available to an organisation depends on its deployed version and enabled access.
 
 ## Endpoints
 
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | [`/v1/catchment-metrics`](/api-reference/catchments/get-catchment-metrics) | Metric values for a catchment around a postcode |
-| `GET` | [`/v1/hex-metrics`](/api-reference/cells/get-hex-metrics) | Metric values for one H3 cell |
-| `GET` | [`/v1/area-cells`](/api-reference/area-mappings/list-cells-for-an-area) | H3 cells an area overlaps |
-| `GET` | [`/v1/cell-areas`](/api-reference/area-mappings/list-areas-for-a-cell) | Areas that overlap an H3 cell |
-| `GET` | [`/v1/metrics`](/api-reference/metrics/list-metrics) | Metrics available to request |
+| Method | Path | Response geography | Credits |
+| --- | --- | --- | --- |
+| `GET` | [`/v1/catchment-metrics`](/api-reference/catchments/get-catchment-metrics) | Postcode catchment, with separate authority values when requested | Usable metric values |
+| `GET` | [`/v1/hex-metrics`](/api-reference/cells/get-hex-metrics) | One H3 resolution-8 cell | Usable metric values |
+| `GET` | [`/v1/local-authority-metrics`](/api-reference/local-authorities/get-local-authority-metrics) | Resolved social-care reporting authority | Usable metric values |
+| `GET` | [`/v1/area-cells`](/api-reference/area-mappings/list-cells-for-an-area) | Cells overlapping a statistical area | Free |
+| `GET` | [`/v1/cell-areas`](/api-reference/area-mappings/list-areas-for-a-cell) | Statistical areas overlapping a cell | Free |
+| `GET` | [`/v1/metrics`](/api-reference/metrics/list-metrics) | Available metric definitions | Free |
 
 ## Base URL
 
 ```text
-https://api.catchment.app
+https://api.catchment.app/v1
 ```
 
-All endpoints are served over HTTPS under `/v1`.
+The API is served on its dedicated host. The application host does not serve `/v1` endpoints. Local development uses `http://api.catchment.app.local:3002/v1`.
 
-## Authentication
-
-Requests are authenticated with an API key sent as a bearer token:
+## Authentication and access
 
 ```text
-Authorization: Bearer ck_...
+Authorization: Bearer <API_KEY>
 ```
 
-| Property | Detail |
+| Property | Contract |
 | --- | --- |
-| Format | Prefix `ck_` followed by 43 characters |
-| Issued by | Organisation admins, under **Account** > **Catchment API** |
-| Scope | The organisation. A key is not tied to the member who created it. |
-| Storage | Shown once at creation. Only a hash is stored, so a key cannot be recovered. |
-| Revocation | Takes effect from the next request |
+| Format | `ck_` followed by 43 URL-safe characters |
+| Issued by | Organisation admins under **Account** > **Catchment API** |
+| Scope | The organisation, independently of the member who created the key |
+| Storage | The key is shown once; only its hash is stored |
+| Revocation | Subsequent requests using the key return `401` |
+| API permission | The organisation must have API access enabled and unexpired |
+| Metric permission | Care, planning and other restricted outputs retain their dataset and metric access requirements |
+| Discovery | `GET /v1/metrics` lists only the metrics the organisation can request |
 
-A missing, unknown or revoked key returns `401`. A valid key for an organisation without API access returns `403`.
+Enabled external organisations can use the API. Membership of an internal organisation is not required. API access is opt-in; a plan or package alone does not enable it.
 
 ## Requests
 
-| Property | Detail |
+| Property | Contract |
 | --- | --- |
 | Method | `GET` |
 | Parameters | Query string |
-| Unknown parameters | Rejected with `400`, except by `/v1/metrics`, which takes no parameters and ignores them |
-| Repeated parameters | Rejected with `400` |
+| Unknown parameters | Rejected with `400`, except `/v1/metrics`, which ignores them |
+| Repeated parameter names | Rejected with `400`, except `/v1/metrics`, which ignores them |
+| `metrics` | Comma-separated keys; whitespace and empty entries are removed, duplicate keys count once |
+| Metric limit | At most 50 distinct keys per request |
+| Catchment size | Exactly one of `radius_miles` from 1–10 or `drive_minutes` from 1–25; whole numbers only |
+| Projection | Optional `projection_year`, 2026–2035, on catchment and hex requests only |
+
+A postcode request can mix catchment and authority keys. Catchment values stay in `values`; authority values stay in `local_authority.values`. Neither section describes the other geography.
 
 ## Responses
 
-| Property | Detail |
+| Field or header | Contract |
 | --- | --- |
 | Content type | `application/json` |
 | Caching | `Cache-Control: no-store` |
-| Request id | `X-Request-Id` header and `request_id` body field, a UUID |
+| Request ID | UUID in `X-Request-Id` and `request_id`, except the unknown-path response |
+| `values` | Requested numeric metric values, or `null` where unavailable |
+| `metric_details` | Availability status, reason and source for each value; includes fee sample coverage or population projection basis where relevant |
+| `local_authority` | Requested area, resolved social-care authority, requested authority values and their details |
+| `credits` | Credits used by this request and remaining available organisation credits, after successful accounting |
 
-## Errors
+Missing values are not zero. Care counts preserve genuine zeros; existing demographic and housing metrics retain their own null policies. A valid request with unavailable metrics returns `200`, with `null` values and `status: "unavailable"`. A service failure returns `500` rather than being presented as unavailable data.
 
-Errors return a JSON body with a machine-readable `code` and a human-readable `message`:
+## Credits
 
-```json
-{
-  "request_id": "0d6f2a4b-8e3c-4a7d-b1f2-9c5e6d7a8b90",
-  "error": {
-    "code": "postcode_not_found",
-    "message": "No UK postcode ZZ99ZZZ was found."
-  }
-}
-```
+| Rule | Contract |
+| --- | --- |
+| Initial allowance | 1,000 API trial credits once per organisation when enabled; an already-enabled organisation is initialized on first use |
+| Pool | Shared by every API key in the organisation |
+| Cost | One credit per distinct requested metric returning a finite numeric value in a successful response; zero is a usable value |
+| Free results | Unavailable/null values, failed or invalid requests, catalogue and area-mapping requests |
+| Internal inputs | Dependencies used to calculate a requested metric do not consume additional credits |
+| Reservation | The available balance must cover all distinct requested keys before the data work begins |
+| Settlement | Unused reserved credits are released; only usable returned values are deducted |
+| Interrupted requests | Outstanding holds expire after five minutes and are reclaimed by a subsequent request |
+| Balance | `credits.remaining` excludes other outstanding reservations |
+| Exhaustion | `403` with `error.code: "credits_exhausted"` and `error.required_credits`; no charge |
+| Repeated successful requests | Consume credits each time |
+| Renewal | No automatic reset. More credits can be added manually by the team managing access |
+| Key/access changes | Creating a key or disabling/re-enabling access does not replenish credits |
 
-| Status | Code | Cause |
-| --- | --- | --- |
-| `400` | `invalid_request` | Missing, invalid, unknown or repeated parameter, or unknown metric key. Unknown keys are listed in `error.unknown_metrics`. |
-| `401` | `unauthorized` | Missing, unknown or revoked API key |
-| `403` | `forbidden` | Organisation not enabled for the API, or its access has expired |
-| `404` | `area_not_found` | No area of the given type has the given code |
-| `404` | `postcode_not_found` | Postcode not in the ONS Postcode Directory |
-| `404` | `outside_coverage` | Postcode or cell outside Great Britain |
-| `404` | `not_found` | No endpoint at the path. This response has no request id. |
-| `405` | | Method not supported by the endpoint. No JSON body. |
-| `429` | `rate_limited` | Rate limit reached for the key |
-| `500` | `internal_error` | Server error |
+These credits are separate from PICSy Analyst credit. They are a trial usage allowance, not a payment or subscription charge.
+
+Requests that complete credit accounting return `credits.used` and `credits.remaining`, mirrored by `X-Credits-Used` and `X-Credits-Remaining`. Authentication failures, rate-limit failures and accounting failures may omit these fields. Free endpoints remain available at a zero credit balance, subject to access and rate limits.
+
+Client-supplied idempotency keys are not supported. A new attempt is a new request. If transport or accounting fails, settlement can be uncertain; include the original request ID when reporting a credit discrepancy.
 
 ## Rate limits
 
-| Property | Detail |
+| Property | Contract |
 | --- | --- |
-| Limit | 60 requests per minute per key |
-| Window | Calendar minute. The count resets at the start of each minute. |
-| Headers | `X-RateLimit-Limit` and `X-RateLimit-Remaining` on responses to an accepted key |
-| On limit | `429` with `Retry-After`, the seconds until the next minute |
+| Default limit | 60 requests per minute per API key; deployment configuration can set another value |
+| Window | Fixed calendar minute; resets at the next minute |
+| Scope | Every request with a valid key, including free endpoints |
+| Response headers | `X-RateLimit-Limit` and `X-RateLimit-Remaining` after passing the rate-limit check |
+| On limit | `429` with `Retry-After`, in seconds; no credits consumed |
 
-## Coverage
+The rate limit and credit balance are separate. Rate limiting is per key; credits are shared across the organisation.
 
-Catchments, cells and area mappings cover England, Scotland and Wales. Metric coverage varies by source and is listed in the [metric catalogue](/api-reference/metric-catalogue). Area type coverage is listed under [area mappings](/api-reference/area-mappings/list-cells-for-an-area).
+## Errors
+
+| Status | `error.code` | Cause |
+| --- | --- | --- |
+| `400` | `invalid_request` | Invalid parameters or unknown metric keys; `unknown_metrics` identifies unrecognized keys |
+| `400` | `invalid_request` | Unsupported endpoint geography; `unsupported_metrics` identifies the affected keys |
+| `401` | `unauthorized` | Missing, unknown or revoked key |
+| `403` | `forbidden` | API access disabled/expired, or missing metric permission; `forbidden_metrics` identifies metric-level denials |
+| `403` | `credits_exhausted` | The organisation cannot reserve the requested credits |
+| `404` | `postcode_not_found` | Postcode not found |
+| `404` | `area_not_found` | Area or authority code not found |
+| `404` | `outside_coverage` | No precomputed catchment, cell data or area mapping at the requested location |
+| `404` | `not_found` | Unknown endpoint path or wrong API host; no request ID |
+| `405` | — | Unsupported HTTP method; framework response, not an API error object |
+| `429` | `rate_limited` | Per-key request limit reached |
+| `500` | `internal_error` | The request or its accounting could not complete |
+
+The OpenAPI reference defines the JSON error fields. Credits remain optional on error responses because authentication or accounting may not have completed.
+
+## Coverage and periods
+
+Catchment and cell metrics cover Great Britain where the necessary source data is available. Postcodes in Northern Ireland have no precomputed catchment. Area mappings support output areas across Great Britain, LSOAs/MSOAs in England and Wales, and data zones/intermediate zones in Scotland.
+
+Authority occupancy covers English reporting areas only. Districts can resolve to parent counties. Each occupancy category uses its latest published source month; missing or suppressed authority values stay unavailable. No older month or England average is substituted. Council fees use the latest usable financial year independently for residential and nursing care; funding bases can differ between sources and nations.
+
+`period_basis` in the [metric catalogue](/api-reference/metric-catalogue) identifies source-period, current published, mixed population/supply, latest-financial-year or latest-reporting-month values. It does not make all datasets current-year observations. `projection_year` affects supported population inputs and derived demand; existing beds, quoted fees, planning and authority observations are not projected.
+
+Private residential and nursing fees are separate. Five years of historical private fees is not provided. Individual metric availability and the organisation's current permitted keys are returned by [`GET /v1/metrics`](/api-reference/metrics/list-metrics).

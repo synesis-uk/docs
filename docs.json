@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "Catchment API",
-  "description": "Demographic, affluence and housing metrics for catchments around UK postcodes and for H3 cells, and the mapping between statistical areas and H3 cells.",
+  "description": "Reference for postcode catchment, H3 cell and local-authority metrics, area mappings and API trial credits.",
   "colors": {
     "primary": "#014D40",
     "light": "#86BBA8",
@@ -33,6 +33,13 @@
         "openapi": "api-reference/openapi.json",
         "pages": [
           "GET /v1/hex-metrics"
+        ]
+      },
+      {
+        "group": "Local authorities",
+        "openapi": "api-reference/openapi.json",
+        "pages": [
+          "GET /v1/local-authority-metrics"
         ]
       },
       {
