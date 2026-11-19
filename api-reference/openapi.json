@@ -3,7 +3,7 @@
   "info": {
     "title": "Catchment API",
     "version": "1.1.0",
-    "description": "Postcode catchment, H3 cell and local-authority metrics, with a discoverable metric catalogue, area mappings and organisation-level trial credits. Access must be explicitly enabled for the organisation. This reference describes the current implementation; availability depends on the deployed version."
+    "description": "Saved-site and postcode catchment metrics, H3 cell and local-authority metrics, a discoverable metric catalogue, area mappings and organisation-level trial credits. Access must be explicitly enabled for the organisation."
   },
   "servers": [
     {
@@ -947,7 +947,7 @@
           "Metrics"
         ],
         "x-mint": {
-          "content": "## Catalogue scope\n\nThe catalogue is filtered by the organisation's API dataset and metric permissions. `geographies` controls which endpoint can read a key. `local_authority` keys can also be included in a postcode catchment request; they remain authority values in that response.\n\n`period_basis` identifies source-period, current published, mixed population/supply, financial-year or monthly observations. It is not a claim that every dataset is current-year data. `nations: null` means no explicit nation restriction in the catalogue, within the API's overall Great Britain coverage; individual values may still be unavailable.\n\nThe static [metric catalogue](/api-reference/metric-catalogue) describes the current full-access set. This endpoint is the discovery contract for your own organisation. Query parameters are ignored. No credits are consumed."
+          "content": "## Catalogue scope\n\nThe catalogue is filtered by the organisation's API dataset and metric permissions. `geographies` controls which endpoint can read a key. `local_authority` keys can also be included in a postcode catchment request; they remain authority values in that response.\n\n`period_basis` identifies source-period, current published, mixed population/supply, financial-year or monthly observations. It is not a claim that every dataset is current-year data. `nations: null` means no explicit nation restriction in the catalogue, within the API's overall Great Britain coverage; individual values may still be unavailable.\n\nThe static [metric catalogue](/api-reference/metric-catalogue) describes the current full-access set. This endpoint is the discovery contract for your own organisation. Query parameters are ignored. No credits are consumed.\n\nUse `site_catchment` keys with the saved-site analysis and preview endpoints."
         }
       }
     },
@@ -1156,6 +1156,438 @@
         ],
         "x-mint": {
           "content": "## Reporting authority\n\nA district normally resolves to its administrative parent county. A county or unitary code can be requested directly. `requested_area` retains the supplied area and `authority` identifies the resolved social-care authority. Every value's details contain the actual `reporting_authority`; occupancy can use a further published reporting-area resolution.\n\n## Fees\n\n`la_avg_fee_residential_week` and `la_avg_fee_nursing_week` each select their latest usable financial year. The two periods can differ. `source_metadata` preserves source-dependent fee-basis and funding evidence when available. Published tariffs, observed fees and Scottish national contract benchmarks are not automatically comparable. No funding basis should be inferred when detailed metadata is absent. Scottish national benchmarks, when present, retain their national source metadata rather than claiming to be council-specific observed averages.\n\n## Occupancy\n\n`la_occupancy_pct` combines general/dementia residential and nursing beds, excluding specialist/other beds. The residential and nursing keys return the separate categories. Coverage is England only. Each category uses its latest published month across the source dataset; a missing or suppressed authority row in that month returns null with the reporting period. The API does not carry forward an older observation or substitute England's value.\n\nThese are authority observations, not occupancy of a radius or an individual care home. No projection year or catchment size is accepted. An existing authority with no available data returns 200 with null values and reasons; an unknown code returns 404.\n\n## Credits\n\nOne credit is reserved per unique requested key and consumed only for each usable numeric value returned. Catalogue and geography-mapping endpoints are free."
+        }
+      }
+    },
+    "/v1/sites": {
+      "get": {
+        "operationId": "listSavedSites",
+        "tags": [
+          "Saved sites"
+        ],
+        "summary": "List saved sites",
+        "description": "List active standalone sites accessible to the organisation's API key.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum sites on a page.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "description": "Pagination cursor from `next_after` on the preceding page.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List active standalone sites accessible to the organisation's API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSiteListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/MetricForbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "x-mint": {
+          "content": "Sites are ordered by ID. A null `next_after` ends pagination. Archived sites and sites owned by targets are excluded. This request uses no credits."
+        }
+      }
+    },
+    "/v1/sites/{siteId}/catchments": {
+      "get": {
+        "operationId": "listSavedCatchments",
+        "tags": [
+          "Saved sites"
+        ],
+        "summary": "List saved catchments",
+        "description": "List a site's saved catchments and their assignments to site views.",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "description": "Saved site ID returned by `GET /v1/sites`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List a site's saved catchments and their assignments to site views.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSiteCatchmentsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/MetricForbidden"
+          },
+          "404": {
+            "description": "No accessible saved site or catchment was found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "x-mint": {
+          "content": "Each site view includes its assigned saved catchment ID when available. Choose the ID assigned to the same view you are comparing in PICSy. This request uses no credits."
+        }
+      }
+    },
+    "/v1/sites/{siteId}/catchments/{catchmentId}/metrics": {
+      "get": {
+        "operationId": "getSavedCatchmentMetrics",
+        "tags": [
+          "Saved sites"
+        ],
+        "summary": "Get saved catchment metrics",
+        "description": "Read metrics or settings for a saved catchment using its effective footprint and saved record selections.",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "description": "Saved site ID returned by `GET /v1/sites`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "catchmentId",
+            "in": "path",
+            "required": true,
+            "description": "Saved catchment ID returned by the site's catchment list.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "metrics",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated keys that support `site_catchment`. Omit to read settings without using metric credits.",
+            "schema": {
+              "type": "string",
+              "description": "At most 50 distinct keys."
+            }
+          },
+          {
+            "name": "projection_year",
+            "in": "query",
+            "required": false,
+            "description": "Population projection year. Defaults to the site's saved year.",
+            "schema": {
+              "type": "integer",
+              "minimum": 2026,
+              "maximum": 2035
+            }
+          },
+          {
+            "name": "include_cells",
+            "in": "query",
+            "required": false,
+            "description": "Return the effective H3 cell IDs.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "include_records",
+            "in": "query",
+            "required": false,
+            "description": "Return included and excluded care-home and planning record IDs for permitted modules.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "bua_inclusion",
+            "in": "query",
+            "required": false,
+            "description": "Set to `cooperative` to apply the catchment's accepted built-up areas. Use the same mode as your website preference when comparing values.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "none",
+                "cooperative"
+              ],
+              "default": "none"
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "required": false,
+            "description": "URL-encoded JSON object with `carehomes` and/or `planning` groups. Supply supported keys and value types from the response's `filters`. Overrides apply for this request.",
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Read metrics or settings for a saved catchment using its effective footprint and saved record selections.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSiteMetricsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/MetricForbidden"
+          },
+          "404": {
+            "description": "No accessible saved site or catchment was found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The site's cached footprint is unavailable for the selected catchment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "x-mint": {
+          "content": "## Saved analysis\n\nThe effective footprint includes the saved sources, manual H3 cell edits and accepted built-up areas when `bua_inclusion=cooperative`. Homes and planning projects follow the saved workspace filters and manual record overrides. Request filter or year overrides for a one-off analysis. The saved record overrides still apply when you change filters on this endpoint.\n\n## Care and planning\n\nThe `bed_weighted_avg_fee_*` keys use the same included-home sample and bed weighting as the website's fee summary. Small samples visible in the workspace are available here. Supply and planning counts use included records. The projection year affects population and demand, while beds, planning capacity and fees use current published data.\n\n## Availability\n\nA missing cached footprint returns `422 catchment_unavailable`. Omit `metrics` for a free settings read."
+        }
+      }
+    },
+    "/v1/sites/{siteId}/catchment-metrics": {
+      "get": {
+        "operationId": "previewSiteCatchmentMetrics",
+        "tags": [
+          "Saved sites"
+        ],
+        "summary": "Preview site catchment metrics",
+        "description": "Measure a cached radius or drive-time band at the saved site pin.",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "description": "Saved site ID returned by `GET /v1/sites`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "radius_miles",
+            "in": "query",
+            "required": false,
+            "description": "Radius in whole miles. Supply exactly one of this parameter and `drive_minutes`.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            }
+          },
+          {
+            "name": "drive_minutes",
+            "in": "query",
+            "required": false,
+            "description": "Drive time in whole minutes. Supply exactly one of this parameter and `radius_miles`.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25
+            }
+          },
+          {
+            "name": "metrics",
+            "in": "query",
+            "required": true,
+            "description": "Comma-separated keys that support `site_catchment`.",
+            "schema": {
+              "type": "string",
+              "description": "At most 50 distinct keys."
+            }
+          },
+          {
+            "name": "projection_year",
+            "in": "query",
+            "required": false,
+            "description": "Population projection year. Defaults to the site's saved year.",
+            "schema": {
+              "type": "integer",
+              "minimum": 2026,
+              "maximum": 2035
+            }
+          },
+          {
+            "name": "include_cells",
+            "in": "query",
+            "required": false,
+            "description": "Return the effective H3 cell IDs.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "include_records",
+            "in": "query",
+            "required": false,
+            "description": "Return included and excluded care-home and planning record IDs for permitted modules.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "bua_inclusion",
+            "in": "query",
+            "required": false,
+            "description": "Set to `cooperative` to apply the catchment's accepted built-up areas. Use the same mode as your website preference when comparing values.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "none",
+                "cooperative"
+              ],
+              "default": "none"
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "required": false,
+            "description": "URL-encoded JSON object with `carehomes` and/or `planning` groups. Supply supported keys and value types from the response's `filters`. Overrides apply for this request.",
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Measure a cached radius or drive-time band at the saved site pin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSiteMetricsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/MetricForbidden"
+          },
+          "404": {
+            "description": "No accessible saved site or catchment was found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The site's cached footprint is unavailable for the selected catchment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "x-mint": {
+          "content": "## Cached footprint\n\nThe range can be one that the site has never saved as a named catchment. The endpoint uses the cached band centred on the site's saved pin. An unsupported or missing cached footprint returns `422 catchment_unavailable`.\n\n## Settings\n\nThe site's supply and planning filters carry over. Manual geometry and record overrides remain with the saved analysis. Use the `filters` and `projection_year` query parameters to override settings for this request. Preview requests leave the saved site and catchments unchanged."
         }
       }
     }
@@ -1707,11 +2139,12 @@
               "enum": [
                 "catchment",
                 "hex",
-                "local_authority"
+                "local_authority",
+                "site_catchment"
               ]
             },
             "minItems": 1,
-            "description": "Supported value geography. local_authority metrics can also be included in postcode catchment requests."
+            "description": "Supported value geography. site_catchment keys can be requested for a saved site. local_authority keys can also be included in postcode catchment requests."
           },
           "period_basis": {
             "type": "string",
@@ -1756,7 +2189,8 @@
                   "postcode_not_found",
                   "rate_limited",
                   "unauthorized",
-                  "credits_exhausted"
+                  "credits_exhausted",
+                  "catchment_unavailable"
                 ]
               },
               "message": {
@@ -2189,6 +2623,493 @@
             "$ref": "#/components/schemas/Credits"
           }
         }
+      },
+      "SavedSite": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "postcode",
+          "latitude",
+          "longitude"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "postcode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "latitude": {
+            "type": "number",
+            "description": "Latitude of the saved site pin."
+          },
+          "longitude": {
+            "type": "number",
+            "description": "Longitude of the saved site pin."
+          }
+        }
+      },
+      "SavedSiteListResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "sites",
+          "next_after",
+          "credits"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SavedSite"
+            }
+          },
+          "next_after": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Cursor for the next page; null at the end."
+          },
+          "credits": {
+            "$ref": "#/components/schemas/Credits"
+          }
+        }
+      },
+      "SavedCatchmentSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "range"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "radius",
+              "drivetime",
+              "drive_miles",
+              "long_drivetime",
+              "public_transport",
+              "base_shape"
+            ]
+          },
+          "range": {
+            "type": "integer",
+            "description": "Miles or minutes, depending on the kind. Zero denotes a base area."
+          }
+        }
+      },
+      "SavedSiteCatchmentsResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "site",
+          "projection_year",
+          "current_scene_id",
+          "catchments",
+          "scenes",
+          "credits"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "site": {
+            "$ref": "#/components/schemas/SavedSite"
+          },
+          "projection_year": {
+            "type": "integer"
+          },
+          "current_scene_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "catchments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SavedCatchmentSummary"
+            }
+          },
+          "scenes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "catchment_id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "catchment_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "Saved catchment assigned to this site view, if any."
+                }
+              }
+            }
+          },
+          "credits": {
+            "$ref": "#/components/schemas/Credits"
+          }
+        }
+      },
+      "SavedCatchmentDefinition": {
+        "type": "object",
+        "required": [
+          "version",
+          "operation",
+          "sources",
+          "hexOverrides",
+          "buaInclusion"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "const": 1
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "union"
+            ]
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "kind",
+                "rangeValue"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "radius",
+                    "drivetime",
+                    "drive_miles",
+                    "long_drivetime",
+                    "public_transport",
+                    "base_shape"
+                  ]
+                },
+                "rangeValue": {
+                  "type": "integer"
+                },
+                "publicTransportScenario": {
+                  "type": "string"
+                },
+                "region": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "hexOverrides": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "include",
+                "exclude"
+              ]
+            }
+          },
+          "buaInclusion": {
+            "type": "object",
+            "required": [
+              "mode",
+              "acceptedBuaReferences",
+              "rejectedBuaReferences"
+            ],
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "cooperative"
+                ]
+              },
+              "acceptedBuaReferences": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rejectedBuaReferences": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "SavedSiteMetricCatchment": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "range",
+          "definition",
+          "cell_count"
+        ],
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Saved catchment ID; null for an alternative range."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "radius",
+              "drivetime",
+              "drive_miles",
+              "long_drivetime",
+              "public_transport",
+              "base_shape"
+            ]
+          },
+          "range": {
+            "type": "integer"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/SavedCatchmentDefinition"
+          },
+          "cell_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "h3_cells": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Effective H3 cell IDs. Returned when `include_cells=true`."
+          }
+        }
+      },
+      "SiteRecordSelection": {
+        "type": "object",
+        "required": [
+          "included_ids",
+          "excluded_ids"
+        ],
+        "properties": {
+          "included_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "excluded_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Candidate records in the footprint that are excluded from the analysis."
+          }
+        }
+      },
+      "SavedSiteMetricsResponse": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "site",
+          "mode",
+          "catchment",
+          "projection_year",
+          "analysis_revision",
+          "h3_data_version",
+          "filters",
+          "record_overrides",
+          "values",
+          "metric_details",
+          "credits"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "site": {
+            "$ref": "#/components/schemas/SavedSite"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "saved",
+              "preview"
+            ],
+            "description": "Preview for an alternative range, projection year override or supplied filter group."
+          },
+          "catchment": {
+            "$ref": "#/components/schemas/SavedSiteMetricCatchment"
+          },
+          "projection_year": {
+            "type": "integer"
+          },
+          "analysis_revision": {
+            "type": "string",
+            "description": "Fingerprint of the site, effective footprint, projection year and applied settings."
+          },
+          "h3_data_version": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "H3 metric source fingerprint when demographic inputs are requested or needed. Does not version care or planning records."
+          },
+          "filters": {
+            "type": "object",
+            "properties": {
+              "carehomes": {
+                "type": "object",
+                "additionalProperties": {
+                  "oneOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ]
+                }
+              },
+              "planning": {
+                "type": "object",
+                "additionalProperties": {
+                  "oneOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Resolved care-home and planning filters for the accessible modules."
+          },
+          "record_overrides": {
+            "type": "object",
+            "properties": {
+              "carehomes": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "enum": [
+                    "include",
+                    "exclude"
+                  ]
+                }
+              },
+              "planning": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "enum": [
+                    "include",
+                    "exclude"
+                  ]
+                }
+              }
+            },
+            "description": "Manual record inclusion or exclusion overrides applied to the analysis."
+          },
+          "records": {
+            "type": "object",
+            "properties": {
+              "carehomes": {
+                "$ref": "#/components/schemas/SiteRecordSelection"
+              },
+              "planning": {
+                "$ref": "#/components/schemas/SiteRecordSelection"
+              }
+            },
+            "description": "Included and excluded candidate record IDs when `include_records=true`."
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "metric_details": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricDetail"
+            }
+          },
+          "credits": {
+            "$ref": "#/components/schemas/Credits"
+          }
+        }
       }
     }
   },
@@ -2196,6 +3117,10 @@
     {
       "name": "Catchments",
       "description": "Metric values for a catchment around a postcode."
+    },
+    {
+      "name": "Saved sites",
+      "description": "Saved-site discovery, saved catchment settings and metrics, and cached catchment previews."
     },
     {
       "name": "Cells",

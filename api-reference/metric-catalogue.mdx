@@ -5,7 +5,7 @@ description: "Current metric keys, units, geographies, projection, nation scope 
 
 This reference lists the 114 metrics in the current full-access catalogue. [`GET /v1/metrics`](/api-reference/metrics/list-metrics) is the discovery contract for the caller's own organisation; its result can be smaller because access is checked per metric.
 
-A postcode request accepts `Catchment` and `Authority` keys together. A cell request accepts only `Cell` keys. The direct authority endpoint accepts only `Authority` keys.
+A postcode request accepts `Catchment` and `Authority` keys together. A cell request accepts only `Cell` keys. The direct authority endpoint accepts only `Authority` keys. Saved-site endpoints accept the keys marked `Saved site` (`site_catchment` in the API catalogue).
 
 "Projected" means the metric depends on supported population projection inputs. With a valid `projection_year`, supported inputs are projected and dependent metrics are recalculated. Missing required projection inputs can make a value unavailable; optional multipliers can leave some source counts unchanged. Authority figures and current supply are not projected.
 
@@ -15,130 +15,130 @@ Nation scope follows the catalogue metadata and is not a guarantee that every lo
 
 | Key | Metric | Unit | Geography | Projected | Nation scope | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `ethnicity_asian` | Asian ethnic group | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: ethnic group |
-| `ethnicity_asian_pct` | Asian ethnic group (%) | % | Catchment, Cell | No | Great Britain | ONS Census 2021: ethnic group |
-| `ethnicity_black` | Black ethnic group | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: ethnic group |
-| `ethnicity_black_pct` | Black ethnic group (%) | % | Catchment, Cell | No | Great Britain | ONS Census 2021: ethnic group |
-| `ethnicity_mixed` | Mixed ethnic group | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: ethnic group |
-| `ethnicity_mixed_pct` | Mixed ethnic group (%) | % | Catchment, Cell | No | Great Britain | ONS Census 2021: ethnic group |
-| `ethnicity_other` | Other ethnic group | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: ethnic group |
-| `ethnicity_other_pct` | Other ethnic group (%) | % | Catchment, Cell | No | Great Britain | ONS Census 2021: ethnic group |
-| `ethnicity_total` | Ethnicity total | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: ethnic group |
-| `ethnicity_white` | White ethnic group | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: ethnic group |
-| `ethnicity_white_pct` | White ethnic group (%) | % | Catchment, Cell | No | Great Britain | ONS Census 2021: ethnic group |
-| `female_65_plus_pct` | Female % (65+) | % | Catchment, Cell | No | Great Britain | ONS Census 2021 |
-| `female_pct` | Female % | % | Catchment, Cell | No | Great Britain | ONS Census 2021 |
-| `male_65_plus_pct` | Male % (65+) | % | Catchment, Cell | No | Great Britain | ONS Census 2021 |
-| `male_pct` | Male % | % | Catchment, Cell | No | Great Britain | ONS Census 2021 |
-| `mig_aged_pct` | Older-age migration % | % | Catchment, Cell | No | Great Britain | ONS Census 2021 |
-| `mig_pct` | Migration % | % | Catchment, Cell | No | Great Britain | ONS Census 2021 |
-| `nssec_1` | Higher professional & managerial | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021: NS-SeC |
-| `nssec_2` | Lower professional & managerial | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021: NS-SeC |
-| `nssec_3` | Intermediate occupations | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021: NS-SeC |
-| `nssec_4` | Higher working class | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021: NS-SeC |
-| `nssec_5` | Lower working class & other | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021: NS-SeC |
-| `pop_16_24` | Population 16-24 | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `pop_16_24_pct` | Population 16-24 (%) | % | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `pop_25_34` | Population 25-34 | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `pop_25_34_pct` | Population 25-34 (%) | % | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `pop_35_44` | Population 35-44 | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `pop_35_44_pct` | Population 35-44 (%) | % | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `pop_45_54` | Population 45-54 | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `pop_45_54_pct` | Population 45-54 (%) | % | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `pop_55_64` | Population 55-64 | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `pop_55_64_pct` | Population 55-64 (%) | % | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `pop_65_74` | Population 65-74 | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `pop_65_74_pct` | Population 65-74 (%) | % | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `pop_75_84` | Population 75-84 | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `pop_75_84_pct` | Population 75-84 (%) | % | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `pop_age_0` | Population aged 0 | Count | Catchment, Cell | Yes | England, Wales | ONS mid-2024 small area population estimates |
-| `pop_age_1` | Population aged 1 | Count | Catchment, Cell | Yes | England, Wales | ONS mid-2024 small area population estimates |
-| `pop_age_2` | Population aged 2 | Count | Catchment, Cell | Yes | England, Wales | ONS mid-2024 small area population estimates |
-| `pop_age_3` | Population aged 3 | Count | Catchment, Cell | Yes | England, Wales | ONS mid-2024 small area population estimates |
-| `pop_age_4` | Population aged 4 | Count | Catchment, Cell | Yes | England, Wales | ONS mid-2024 small area population estimates |
-| `population_0_2` | Population aged 0-2 | Count | Catchment, Cell | Yes | Great Britain | ONS mid-2024 small area population estimates |
-| `population_0_2_pct` | Population aged 0-2 (%) | % | Catchment, Cell | Yes | Great Britain | ONS mid-2024 small area population estimates |
-| `population_0_4` | Population aged 0-4 | Count | Catchment, Cell | Yes | Great Britain | ONS mid-2024 small area population estimates |
-| `population_0_4_pct` | Population aged 0-4 (%) | % | Catchment, Cell | Yes | Great Britain | ONS mid-2024 small area population estimates |
-| `population_15_minus` | Population 15 and under | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `population_3_4` | Population aged 3-4 | Count | Catchment, Cell | Yes | Great Britain | ONS mid-2024 small area population estimates |
-| `population_3_4_pct` | Population aged 3-4 (%) | % | Catchment, Cell | Yes | Great Britain | ONS mid-2024 small area population estimates |
-| `population_65_plus_pct` | Population 65+ (%) | % | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `population_75_plus` | Population 75+ | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `population_75_plus_pct` | Population 75+ (%) | % | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `population_85_plus` | Population 85+ | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `population_85_plus_pct` | Population 85+ (%) | % | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `population_total` | Population total | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
-| `population_working_age` | Population 16-64 (working age) | Count | Catchment, Cell | Yes | Great Britain | ONS Census 2021 |
+| `ethnicity_asian` | Asian ethnic group | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: ethnic group |
+| `ethnicity_asian_pct` | Asian ethnic group (%) | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: ethnic group |
+| `ethnicity_black` | Black ethnic group | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: ethnic group |
+| `ethnicity_black_pct` | Black ethnic group (%) | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: ethnic group |
+| `ethnicity_mixed` | Mixed ethnic group | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: ethnic group |
+| `ethnicity_mixed_pct` | Mixed ethnic group (%) | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: ethnic group |
+| `ethnicity_other` | Other ethnic group | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: ethnic group |
+| `ethnicity_other_pct` | Other ethnic group (%) | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: ethnic group |
+| `ethnicity_total` | Ethnicity total | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: ethnic group |
+| `ethnicity_white` | White ethnic group | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: ethnic group |
+| `ethnicity_white_pct` | White ethnic group (%) | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: ethnic group |
+| `female_65_plus_pct` | Female % (65+) | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021 |
+| `female_pct` | Female % | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021 |
+| `male_65_plus_pct` | Male % (65+) | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021 |
+| `male_pct` | Male % | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021 |
+| `mig_aged_pct` | Older-age migration % | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021 |
+| `mig_pct` | Migration % | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021 |
+| `nssec_1` | Higher professional & managerial | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021: NS-SeC |
+| `nssec_2` | Lower professional & managerial | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021: NS-SeC |
+| `nssec_3` | Intermediate occupations | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021: NS-SeC |
+| `nssec_4` | Higher working class | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021: NS-SeC |
+| `nssec_5` | Lower working class & other | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021: NS-SeC |
+| `pop_16_24` | Population 16-24 | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `pop_16_24_pct` | Population 16-24 (%) | % | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `pop_25_34` | Population 25-34 | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `pop_25_34_pct` | Population 25-34 (%) | % | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `pop_35_44` | Population 35-44 | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `pop_35_44_pct` | Population 35-44 (%) | % | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `pop_45_54` | Population 45-54 | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `pop_45_54_pct` | Population 45-54 (%) | % | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `pop_55_64` | Population 55-64 | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `pop_55_64_pct` | Population 55-64 (%) | % | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `pop_65_74` | Population 65-74 | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `pop_65_74_pct` | Population 65-74 (%) | % | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `pop_75_84` | Population 75-84 | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `pop_75_84_pct` | Population 75-84 (%) | % | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `pop_age_0` | Population aged 0 | Count | Catchment, Cell, Saved site | Yes | England, Wales | ONS mid-2024 small area population estimates |
+| `pop_age_1` | Population aged 1 | Count | Catchment, Cell, Saved site | Yes | England, Wales | ONS mid-2024 small area population estimates |
+| `pop_age_2` | Population aged 2 | Count | Catchment, Cell, Saved site | Yes | England, Wales | ONS mid-2024 small area population estimates |
+| `pop_age_3` | Population aged 3 | Count | Catchment, Cell, Saved site | Yes | England, Wales | ONS mid-2024 small area population estimates |
+| `pop_age_4` | Population aged 4 | Count | Catchment, Cell, Saved site | Yes | England, Wales | ONS mid-2024 small area population estimates |
+| `population_0_2` | Population aged 0-2 | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS mid-2024 small area population estimates |
+| `population_0_2_pct` | Population aged 0-2 (%) | % | Catchment, Cell, Saved site | Yes | Great Britain | ONS mid-2024 small area population estimates |
+| `population_0_4` | Population aged 0-4 | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS mid-2024 small area population estimates |
+| `population_0_4_pct` | Population aged 0-4 (%) | % | Catchment, Cell, Saved site | Yes | Great Britain | ONS mid-2024 small area population estimates |
+| `population_15_minus` | Population 15 and under | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `population_3_4` | Population aged 3-4 | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS mid-2024 small area population estimates |
+| `population_3_4_pct` | Population aged 3-4 (%) | % | Catchment, Cell, Saved site | Yes | Great Britain | ONS mid-2024 small area population estimates |
+| `population_65_plus_pct` | Population 65+ (%) | % | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `population_75_plus` | Population 75+ | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `population_75_plus_pct` | Population 75+ (%) | % | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `population_85_plus` | Population 85+ | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `population_85_plus_pct` | Population 85+ (%) | % | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `population_total` | Population total | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
+| `population_working_age` | Population 16-64 (working age) | Count | Catchment, Cell, Saved site | Yes | Great Britain | ONS Census 2021 |
 
 ## Affluence
 
 | Key | Metric | Unit | Geography | Projected | Nation scope | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `avg_income` | Average Household income | GBP | Catchment, Cell | No | Great Britain | ONS small area income estimates, FYE 2023 |
-| `avg_price` | Average House Price (2024/5) | GBP | Catchment, Cell | No | Great Britain | HM Land Registry Price Paid Data |
-| `avg_price_detached_2024_2025` | Average Detached Price (2024/5) | GBP | Catchment, Cell | No | Great Britain | HM Land Registry Price Paid Data |
-| `avg_price_flat_2024_2025` | Average Flat Price (2024/5) | GBP | Catchment, Cell | No | Great Britain | HM Land Registry Price Paid Data |
-| `avg_price_semi_detached_2024_2025` | Average Semi-Detached Price (2024/5) | GBP | Catchment, Cell | No | Great Britain | HM Land Registry Price Paid Data |
-| `avg_price_terraced_2024_2025` | Average Terraced Price (2024/5) | GBP | Catchment, Cell | No | Great Britain | HM Land Registry Price Paid Data |
-| `idaci_rank` | IDACI Rank | Index | Catchment, Cell | No | England | MHCLG English indices of deprivation 2025 |
-| `idaopi_rank` | IDAOPI Rank | Index | Catchment, Cell | No | England | MHCLG English indices of deprivation 2025 |
-| `imd_rank` | IMD rank | Rank | Catchment, Cell | No | England | MHCLG English indices of deprivation 2019 |
-| `pension_wealth_rank` | Pension Wealth Rank | Index | Catchment, Cell | No | Great Britain | internal metric |
+| `avg_income` | Average Household income | GBP | Catchment, Cell, Saved site | No | Great Britain | ONS small area income estimates, FYE 2023 |
+| `avg_price` | Average House Price (2024/5) | GBP | Catchment, Cell, Saved site | No | Great Britain | HM Land Registry Price Paid Data |
+| `avg_price_detached_2024_2025` | Average Detached Price (2024/5) | GBP | Catchment, Cell, Saved site | No | Great Britain | HM Land Registry Price Paid Data |
+| `avg_price_flat_2024_2025` | Average Flat Price (2024/5) | GBP | Catchment, Cell, Saved site | No | Great Britain | HM Land Registry Price Paid Data |
+| `avg_price_semi_detached_2024_2025` | Average Semi-Detached Price (2024/5) | GBP | Catchment, Cell, Saved site | No | Great Britain | HM Land Registry Price Paid Data |
+| `avg_price_terraced_2024_2025` | Average Terraced Price (2024/5) | GBP | Catchment, Cell, Saved site | No | Great Britain | HM Land Registry Price Paid Data |
+| `idaci_rank` | IDACI Rank | Index | Catchment, Cell, Saved site | No | England | MHCLG English indices of deprivation 2025 |
+| `idaopi_rank` | IDAOPI Rank | Index | Catchment, Cell, Saved site | No | England | MHCLG English indices of deprivation 2025 |
+| `imd_rank` | IMD rank | Rank | Catchment, Cell, Saved site | No | England | MHCLG English indices of deprivation 2019 |
+| `pension_wealth_rank` | Pension Wealth Rank | Index | Catchment, Cell, Saved site | No | Great Britain | internal metric |
 
 ## Housing
 
 | Key | Metric | Unit | Geography | Projected | Nation scope | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `accommodation_detached_households` | Detached Households | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: accommodation type |
-| `accommodation_detached_households_pct` | Detached Households % | % | Catchment, Cell | No | Great Britain | ONS Census 2021: accommodation type |
-| `accommodation_flat_households` | Flat Households | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: accommodation type |
-| `accommodation_flat_households_pct` | Flat Households % | % | Catchment, Cell | No | Great Britain | ONS Census 2021: accommodation type |
-| `accommodation_semi_detached_households` | Semi-Detached Households | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: accommodation type |
-| `accommodation_semi_detached_households_pct` | Semi-Detached Households % | % | Catchment, Cell | No | Great Britain | ONS Census 2021: accommodation type |
-| `accommodation_terraced_households` | Terraced Households | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: accommodation type |
-| `accommodation_terraced_households_pct` | Terraced Households % | % | Catchment, Cell | No | Great Britain | ONS Census 2021: accommodation type |
-| `accommodation_total_households` | Occupied Households | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: accommodation type |
-| `centrality_score` | Centrality score | Index | Catchment, Cell | No | Great Britain | internal metric |
-| `house_price_txn_count_detached_2024_2025` | Detached Transactions (2024/5) | Count | Catchment, Cell | No | Great Britain | HM Land Registry Price Paid Data |
-| `house_price_txn_count_flat_2024_2025` | Flat Transactions (2024/5) | Count | Catchment, Cell | No | Great Britain | HM Land Registry Price Paid Data |
-| `house_price_txn_count_semi_detached_2024_2025` | Semi-Detached Transactions (2024/5) | Count | Catchment, Cell | No | Great Britain | HM Land Registry Price Paid Data |
-| `house_price_txn_count_terraced_2024_2025` | Terraced Transactions (2024/5) | Count | Catchment, Cell | No | Great Britain | HM Land Registry Price Paid Data |
-| `tenure_owned_mortgage` | Owned with mortgage households | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: tenure |
-| `tenure_owned_mortgage_pct` | Owned with mortgage households (%) | % | Catchment, Cell | No | Great Britain | ONS Census 2021: tenure |
-| `tenure_owned_outright` | Owned outright households | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: tenure |
-| `tenure_owned_outright_pct` | Owned outright households (%) | % | Catchment, Cell | No | Great Britain | ONS Census 2021: tenure |
-| `tenure_rented_private` | Private rented households | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: tenure |
-| `tenure_rented_private_pct` | Private rented households (%) | % | Catchment, Cell | No | Great Britain | ONS Census 2021: tenure |
-| `tenure_rented_social` | Social rented households | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: tenure |
-| `tenure_rented_social_pct` | Social rented households (%) | % | Catchment, Cell | No | Great Britain | ONS Census 2021: tenure |
-| `tenure_total_households` | Total households | Count | Catchment, Cell | No | Great Britain | ONS Census 2021: tenure |
+| `accommodation_detached_households` | Detached Households | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: accommodation type |
+| `accommodation_detached_households_pct` | Detached Households % | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: accommodation type |
+| `accommodation_flat_households` | Flat Households | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: accommodation type |
+| `accommodation_flat_households_pct` | Flat Households % | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: accommodation type |
+| `accommodation_semi_detached_households` | Semi-Detached Households | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: accommodation type |
+| `accommodation_semi_detached_households_pct` | Semi-Detached Households % | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: accommodation type |
+| `accommodation_terraced_households` | Terraced Households | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: accommodation type |
+| `accommodation_terraced_households_pct` | Terraced Households % | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: accommodation type |
+| `accommodation_total_households` | Occupied Households | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: accommodation type |
+| `centrality_score` | Centrality score | Index | Catchment, Cell, Saved site | No | Great Britain | internal metric |
+| `house_price_txn_count_detached_2024_2025` | Detached Transactions (2024/5) | Count | Catchment, Cell, Saved site | No | Great Britain | HM Land Registry Price Paid Data |
+| `house_price_txn_count_flat_2024_2025` | Flat Transactions (2024/5) | Count | Catchment, Cell, Saved site | No | Great Britain | HM Land Registry Price Paid Data |
+| `house_price_txn_count_semi_detached_2024_2025` | Semi-Detached Transactions (2024/5) | Count | Catchment, Cell, Saved site | No | Great Britain | HM Land Registry Price Paid Data |
+| `house_price_txn_count_terraced_2024_2025` | Terraced Transactions (2024/5) | Count | Catchment, Cell, Saved site | No | Great Britain | HM Land Registry Price Paid Data |
+| `tenure_owned_mortgage` | Owned with mortgage households | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: tenure |
+| `tenure_owned_mortgage_pct` | Owned with mortgage households (%) | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: tenure |
+| `tenure_owned_outright` | Owned outright households | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: tenure |
+| `tenure_owned_outright_pct` | Owned outright households (%) | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: tenure |
+| `tenure_rented_private` | Private rented households | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: tenure |
+| `tenure_rented_private_pct` | Private rented households (%) | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: tenure |
+| `tenure_rented_social` | Social rented households | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: tenure |
+| `tenure_rented_social_pct` | Social rented households (%) | % | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: tenure |
+| `tenure_total_households` | Total households | Count | Catchment, Cell, Saved site | No | Great Britain | ONS Census 2021: tenure |
 
 ## Care and planning catchments
 
 | Key | Metric | Unit | Geography | Projected | Nation scope | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `avg_fee_nursing_week` | Average nursing fee / week | GBP | Catchment | No | Great Britain | PICSy published carehome supply and quoted fees |
-| `avg_fee_residential_week` | Average residential fee / week | GBP | Catchment | No | Great Britain | PICSy published carehome supply and quoted fees |
-| `bed_weighted_avg_fee_nursing_week` | Avg Quoted Fee / week (Nursing, weighted) | GBP | Catchment | No | Great Britain | PICSy published carehome supply and quoted fees |
-| `bed_weighted_avg_fee_residential_week` | Avg Quoted Fee / week (Residential, weighted) | GBP | Catchment | No | Great Britain | PICSy published carehome supply and quoted fees |
-| `carehome_demand` | Carehome demand | Count | Catchment | Yes | Great Britain | PICSy age-based carehome demand model |
-| `existing_beds_all` | Existing beds | Count | Catchment | No | Great Britain | PICSy published carehome supply and quoted fees |
-| `existing_beds_ensuite` | Existing ensuite beds | Count | Catchment | No | Great Britain | PICSy published carehome supply and quoted fees |
-| `existing_beds_wetroom` | Existing wetroom beds | Count | Catchment | No | Great Britain | PICSy published carehome supply and quoted fees |
-| `fee_nursing_beds_covered` | Nursing fee beds covered | Count | Catchment | No | Great Britain | PICSy published carehome supply and quoted fees |
-| `fee_nursing_count` | Nursing fee sample count | Count | Catchment | No | Great Britain | PICSy published carehome supply and quoted fees |
-| `fee_residential_beds_covered` | Residential fee beds covered | Count | Catchment | No | Great Britain | PICSy published carehome supply and quoted fees |
-| `fee_residential_count` | Residential fee sample count | Count | Catchment | No | Great Britain | PICSy published carehome supply and quoted fees |
-| `median_fee_nursing_week` | Median nursing fee / week | GBP | Catchment | No | Great Britain | PICSy published carehome supply and quoted fees |
-| `median_fee_residential_week` | Median residential fee / week | GBP | Catchment | No | Great Britain | PICSy published carehome supply and quoted fees |
-| `planned_permitted_beds` | Planned Permitted Beds | Count | Catchment | No | Great Britain | PICSy published care planning pipeline |
-| `planned_permitted_count` | Planned permitted projects | Count | Catchment | No | Great Britain | PICSy published care planning pipeline |
-| `planned_undecided_beds` | Planned Undecided Beds | Count | Catchment | No | Great Britain | PICSy published care planning pipeline |
-| `planned_undecided_count` | Planned undecided projects | Count | Catchment | No | Great Britain | PICSy published care planning pipeline |
-| `undersupply_existing_all` | Existing all bed undersupply | Count | Catchment | Yes | Great Britain | PICSy carehome demand and published bed supply |
-| `undersupply_existing_ensuite` | Existing ensuite bed undersupply | Count | Catchment | Yes | Great Britain | PICSy carehome demand and published bed supply |
-| `undersupply_existing_wetroom` | Existing wetroom bed undersupply | Count | Catchment | Yes | Great Britain | PICSy carehome demand and published bed supply |
+| `avg_fee_nursing_week` | Average nursing fee / week | GBP | Catchment, Saved site | No | Great Britain | PICSy published carehome supply and quoted fees |
+| `avg_fee_residential_week` | Average residential fee / week | GBP | Catchment, Saved site | No | Great Britain | PICSy published carehome supply and quoted fees |
+| `bed_weighted_avg_fee_nursing_week` | Avg Quoted Fee / week (Nursing, weighted) | GBP | Catchment, Saved site | No | Great Britain | PICSy published carehome supply and quoted fees |
+| `bed_weighted_avg_fee_residential_week` | Avg Quoted Fee / week (Residential, weighted) | GBP | Catchment, Saved site | No | Great Britain | PICSy published carehome supply and quoted fees |
+| `carehome_demand` | Carehome demand | Count | Catchment, Saved site | Yes | Great Britain | PICSy age-based carehome demand model |
+| `existing_beds_all` | Existing beds | Count | Catchment, Saved site | No | Great Britain | PICSy published carehome supply and quoted fees |
+| `existing_beds_ensuite` | Existing ensuite beds | Count | Catchment, Saved site | No | Great Britain | PICSy published carehome supply and quoted fees |
+| `existing_beds_wetroom` | Existing wetroom beds | Count | Catchment, Saved site | No | Great Britain | PICSy published carehome supply and quoted fees |
+| `fee_nursing_beds_covered` | Nursing fee beds covered | Count | Catchment, Saved site | No | Great Britain | PICSy published carehome supply and quoted fees |
+| `fee_nursing_count` | Nursing fee sample count | Count | Catchment, Saved site | No | Great Britain | PICSy published carehome supply and quoted fees |
+| `fee_residential_beds_covered` | Residential fee beds covered | Count | Catchment, Saved site | No | Great Britain | PICSy published carehome supply and quoted fees |
+| `fee_residential_count` | Residential fee sample count | Count | Catchment, Saved site | No | Great Britain | PICSy published carehome supply and quoted fees |
+| `median_fee_nursing_week` | Median nursing fee / week | GBP | Catchment, Saved site | No | Great Britain | PICSy published carehome supply and quoted fees |
+| `median_fee_residential_week` | Median residential fee / week | GBP | Catchment, Saved site | No | Great Britain | PICSy published carehome supply and quoted fees |
+| `planned_permitted_beds` | Planned Permitted Beds | Count | Catchment, Saved site | No | Great Britain | PICSy published care planning pipeline |
+| `planned_permitted_count` | Planned permitted projects | Count | Catchment, Saved site | No | Great Britain | PICSy published care planning pipeline |
+| `planned_undecided_beds` | Planned Undecided Beds | Count | Catchment, Saved site | No | Great Britain | PICSy published care planning pipeline |
+| `planned_undecided_count` | Planned undecided projects | Count | Catchment, Saved site | No | Great Britain | PICSy published care planning pipeline |
+| `undersupply_existing_all` | Existing all bed undersupply | Count | Catchment, Saved site | Yes | Great Britain | PICSy carehome demand and published bed supply |
+| `undersupply_existing_ensuite` | Existing ensuite bed undersupply | Count | Catchment, Saved site | Yes | Great Britain | PICSy carehome demand and published bed supply |
+| `undersupply_existing_wetroom` | Existing wetroom bed undersupply | Count | Catchment, Saved site | Yes | Great Britain | PICSy carehome demand and published bed supply |
 
 ## Local authorities
 

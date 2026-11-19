@@ -3,7 +3,7 @@ title: "Overview"
 description: "Endpoint, authentication, response, credit and coverage reference for the Catchment API."
 ---
 
-The Catchment API returns postcode-catchment, H3-cell and local-authority metrics. Access is enabled per organisation. A valid API key does not grant access to additional datasets or metrics.
+The Catchment API returns saved-site, postcode-catchment, H3-cell and local-authority metrics. Access is enabled per organisation. A valid API key does not grant access to additional datasets or metrics.
 
 This reference describes the current implementation. The beta service available to an organisation depends on its deployed version and enabled access.
 
@@ -12,6 +12,10 @@ This reference describes the current implementation. The beta service available 
 | Method | Path | Response geography | Credits |
 | --- | --- | --- | --- |
 | `GET` | [`/v1/catchment-metrics`](/api-reference/catchments/get-catchment-metrics) | Postcode catchment, with separate authority values when requested | Usable metric values |
+| `GET` | [`/v1/sites`](/api-reference/saved-sites/list-saved-sites) | Saved site IDs and pins | Free |
+| `GET` | [`/v1/sites/{siteId}/catchments`](/api-reference/saved-sites/list-saved-catchments) | Saved catchment IDs and site view assignments | Free |
+| `GET` | [`/v1/sites/{siteId}/catchments/{catchmentId}/metrics`](/api-reference/saved-sites/get-saved-catchment-metrics) | Saved catchment metrics and settings | Usable metric values |
+| `GET` | [`/v1/sites/{siteId}/catchment-metrics`](/api-reference/saved-sites/preview-site-catchment-metrics) | Alternative cached catchment at the saved site pin | Usable metric values |
 | `GET` | [`/v1/hex-metrics`](/api-reference/cells/get-hex-metrics) | One H3 resolution-8 cell | Usable metric values |
 | `GET` | [`/v1/local-authority-metrics`](/api-reference/local-authorities/get-local-authority-metrics) | Resolved social-care reporting authority | Usable metric values |
 | `GET` | [`/v1/area-cells`](/api-reference/area-mappings/list-cells-for-an-area) | Cells overlapping a statistical area | Free |
@@ -56,7 +60,7 @@ Enabled external organisations can use the API. Membership of an internal organi
 | `metrics` | Comma-separated keys; whitespace and empty entries are removed, duplicate keys count once |
 | Metric limit | At most 50 distinct keys per request |
 | Catchment size | Exactly one of `radius_miles` from 1–10 or `drive_minutes` from 1–25; whole numbers only |
-| Projection | Optional `projection_year`, 2026–2035, on catchment and hex requests only |
+| Projection | Optional `projection_year`, 2026–2035, on postcode, saved-site and hex metric requests |
 
 A postcode request can mix catchment and authority keys. Catchment values stay in `values`; authority values stay in `local_authority.values`. Neither section describes the other geography.
 
@@ -81,7 +85,7 @@ Missing values are not zero. Care counts preserve genuine zeros; existing demogr
 | Initial allowance | 1,000 API trial credits once per organisation when enabled; an already-enabled organisation is initialized on first use |
 | Pool | Shared by every API key in the organisation |
 | Cost | One credit per distinct requested metric returning a finite numeric value in a successful response; zero is a usable value |
-| Free results | Unavailable/null values, failed or invalid requests, catalogue and area-mapping requests |
+| Free results | Unavailable/null values, failed or invalid requests, catalogue, area mappings, saved-site discovery and saved-settings reads |
 | Internal inputs | Dependencies used to calculate a requested metric do not consume additional credits |
 | Reservation | The available balance must cover all distinct requested keys before the data work begins |
 | Settlement | Unused reserved credits are released; only usable returned values are deducted |
@@ -122,7 +126,8 @@ The rate limit and credit balance are separate. Rate limiting is per key; credit
 | `404` | `postcode_not_found` | Postcode not found |
 | `404` | `area_not_found` | Area or authority code not found |
 | `404` | `outside_coverage` | No precomputed catchment, cell data or area mapping at the requested location |
-| `404` | `not_found` | Unknown endpoint path or wrong API host; no request ID |
+| `404` | `not_found` | No accessible saved site or catchment, unknown endpoint, or wrong API host |
+| `422` | `catchment_unavailable` | The requested saved-site footprint is unavailable in the site's cache |
 | `405` | — | Unsupported HTTP method; framework response, not an API error object |
 | `429` | `rate_limited` | Per-key request limit reached |
 | `500` | `internal_error` | The request or its accounting could not complete |
